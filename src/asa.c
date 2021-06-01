@@ -82,12 +82,13 @@ int atom_in_list(s_atm *a, s_atm **atoms, int natoms){
         int * : atom ids of surrounding atoms
  */
 
-int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_sa, s_atm **ua, int n_ua){
+int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_sa){
     s_atm *a=NULL;
     int *sa=NULL;
     int i,z,flag=0;
     *n_sa=0;
     s_vvertice *vcur = NULL;
+    float box_edge = 1.4*M_PADDING;
 
     float xmin = 0.0, xmax = 0.0,
           ymin = 0.0, ymax = 0.0,
@@ -97,27 +98,27 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
     for(i=0; i<nvert; i++){
         vcur = tvert[i];
         if(i==0){
-            xmin = vcur->x - vcur->ray - M_PADDING;
-            xmax = vcur->x + vcur->ray + M_PADDING;
-            ymin = vcur->y - vcur->ray - M_PADDING;
-            ymax = vcur->y + vcur->ray + M_PADDING;
-            zmin = vcur->z - vcur->ray - M_PADDING;
-            zmax = vcur->z + vcur->ray + M_PADDING;
+            xmin = vcur->x - vcur->ray - box_edge;
+            xmax = vcur->x + vcur->ray + box_edge;
+            ymin = vcur->y - vcur->ray - box_edge;
+            ymax = vcur->y + vcur->ray + box_edge;
+            zmin = vcur->z - vcur->ray - box_edge;
+            zmax = vcur->z + vcur->ray + box_edge;
         }
         else{
-            if (xmin > (xtmp = vcur->x - vcur->ray - M_PADDING))
+            if (xmin > (xtmp = vcur->x - vcur->ray - box_edge))
                 xmin = xtmp;
-            else if (xmax < (xtmp = vcur->x + vcur->ray + M_PADDING))
+            else if (xmax < (xtmp = vcur->x + vcur->ray + box_edge))
                 xmax = xtmp;
 
-            if (ymin > (ytmp = vcur->y - vcur->ray - M_PADDING))
+            if (ymin > (ytmp = vcur->y - vcur->ray - box_edge))
                 ymin = ytmp;
-            else if (ymax < (ytmp = vcur->y + vcur->ray + M_PADDING))
+            else if (ymax < (ytmp = vcur->y + vcur->ray + box_edge))
                 ymax = ytmp;
 
-            if (zmin > (ztmp = vcur->z - vcur->ray - M_PADDING))
+            if (zmin > (ztmp = vcur->z - vcur->ray - box_edge))
                 zmin = ztmp;
-            else if (zmax < (ztmp = vcur->z + vcur->ray + M_PADDING))
+            else if (zmax < (ztmp = vcur->z + vcur->ray + box_edge))
                 zmax = ztmp;
         }
     }
@@ -128,7 +129,7 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
         xtmp = a->x;
         ytmp = a->y;
         ztmp = a->z;
-        if(atom_in_list(a, ua, n_ua)){
+        /*if(atom_in_list(a, ua, n_ua)){
             if(strncmp(a->symbol, "H",1)){
               *n_sa=*n_sa+1;
               if(sa==NULL){
@@ -141,7 +142,7 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
                   }
               continue;
           }
-        }
+        }*/
         if(xtmp>=xmin && xtmp<=xmax && ytmp>=ymin && ytmp<=ymax && ztmp>=zmin && ztmp<=zmax){
 
           if(strncmp(a->symbol,"H",1)){
@@ -167,7 +168,35 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
     return sa;
 }
 
-
+/*int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_sa){
+    s_atm *a=NULL;
+    int *sa=NULL;
+    int i,z,flag=0;
+    *n_sa=0;
+    for(i=0;i<pdb->natoms;i++){
+        a=pdb->latoms_p[i];
+        //consider only heavy atoms for vdw incr.
+        if(strncmp(a->symbol,"H",1)){
+            flag=0;
+            for(z=0;z<nvert && !flag;z++){
+                //flag=atom_not_in_list(a,sa,*n_sa);
+                flag=in_tab(sa,*n_sa,i);
+                if(!flag && ddist(a->x,a->y,a->z,tvert[z]->x,tvert[z]->y,tvert[z]->z)<(tvert[z]->ray+M_PADDING)*(tvert[z]->ray+M_PADDING)){
+                    *n_sa=*n_sa+1;
+                    if(sa==NULL){
+                        sa=(int *)malloc(sizeof(int));
+                        sa[*n_sa-1]=i;
+                    }
+                    else {
+                        sa=(int *)realloc(sa,sizeof(int)*(*n_sa));
+                        sa[*n_sa-1]=i;
+                    }
+                }
+            }
+        }
+    }
+    return sa;
+}*/
 /**
    ## FUNCTION:
         get_unique_atoms
@@ -271,43 +300,7 @@ s_atm **get_unique_atoms_DEPRECATED(s_vvertice **tvert,int nvert, int *n_ua)
     return ua;
 }
 
-int **nei_vert_of_ua(s_vvertice **tvert, int nvert, s_atm **ua, int n_ua){
-    int **reverse_neis;
-    reverse_neis =(int **)malloc(n_ua*sizeof(int *));
-    for (int i=0; i<n_ua; i++){
-        reverse_neis[i] = (int *)malloc(nvert*sizeof(int *));
-    }
-    for(int i=0; i<n_ua; i++){
-        for(int j=0; j < nvert; j++){
-            reverse_neis[i][j] = -1;
-        }
-    }
-    //memset(reverse_neis, -1, sizeof(reverse_neis[0][0]) * n_ua * nvert);
-    s_atm **neighs = NULL ;
-    s_atm *a = NULL;
-    int i=0, z=0, j=0;
-    int n_reverse_neigh;
-    //fprintf(stdout, "%d, %d", nvert, n_ua);
-    //fprintf(stdout, "%d", reverse_neis[0][0]);
-    for(i=0; i<n_ua; i++){
-        n_reverse_neigh=0;
-        for(z=0; z<nvert; z++){
-            for(j=0; j<4; j++){
-                a = tvert[z]->neigh[j];
-                if(ua[i] == a){
-                   if(ua[i]->id != a->id) {
-                     fprintf(stdout,"WARNING asa.c: atom in the list but with different ID!") ;
-                   }
-                   //fprintf(stdout, "%d, %d", i, z);
-                   reverse_neis[i][n_reverse_neigh]=z;
-                   n_reverse_neigh += 1;
-                }
-            }
-        }
-    }
-    //fprintf(stdout, "%d", reverse_neis[0][0]);
-    return reverse_neis;
-}
+
 /**
    ## FUNCTION:
         set_ASA
@@ -353,7 +346,7 @@ void set_ASA(s_desc *desc,s_pdb *pdb, s_vvertice **tvert,int nvert)
     /*ua=get_unique_atoms_DEPRECATED(tvert,nvert, &n_ua,pdb->latoms_p,pdb->natoms);*/
 
     ua=get_unique_atoms_DEPRECATED(tvert,nvert, &n_ua);
-    sa=get_surrounding_atoms_idx(tvert, nvert, pdb, &n_sa,ua,n_ua);
+    sa=get_surrounding_atoms_idx(tvert, nvert, pdb, &n_sa);
     //int **reverse_neis = nei_vert_of_ua(tvert, nvert, ua, n_ua);;
     //reverse_neis = nei_vert_of_ua(tvert, nvert, ua, n_ua);
     //fprintf(stdout, "%d", reverse_neis[0][0]);
