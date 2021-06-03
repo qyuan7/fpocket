@@ -31,9 +31,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /* --------------------------PROTOTYPES---------------------------------------*/
 
 void refinePockets(c_lst_pockets *pockets, s_fparams *params);
-void apply_clustering(c_lst_pockets *pockets, s_fparams *params);
+//void apply_clustering(c_lst_pockets *pockets, s_fparams *params);
+//c_lst_pockets *apply_clustering(c_lst_pockets *pockets, s_fparams *params);
+void apply_clustering_old(c_lst_pockets *pockets, s_fparams *params);
+c_lst_pockets *apply_clustering(c_lst_pockets *pockets, s_fparams *params, s_lst_vvertice *lvert);
 void reIndexPockets(c_lst_pockets *pockets);
 void dropSmallNpolarPockets(c_lst_pockets *pockets, s_fparams *params);
 void drop_tiny(c_lst_pockets *pockets, s_fparams *params) ;
-
+void dropSmallPockets(c_lst_pockets *pockets, s_fparams *params);
+int cmp_pockets(const node_pocket *p1, const node_pocket *p2);
 #endif
