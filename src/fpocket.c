@@ -62,6 +62,7 @@ c_lst_pockets* search_pocket(s_pdb *pdb, s_fparams *params, s_pdb *pdb_w_lig) {
     time_t bt, et;
 
     c_lst_pockets *pockets = NULL;
+    c_lst_pockets *pockets1 = NULL;
 
     s_clusterlib_vertices *clusterlib_vertices = NULL;
     Node *cluster_tree = NULL;
@@ -155,19 +156,24 @@ c_lst_pockets* search_pocket(s_pdb *pdb, s_fparams *params, s_pdb *pdb_w_lig) {
         fflush(DEBUG_STREAM);
     }
     
-    apply_clustering(pockets, params);
+    //apply_clustering_old(pockets, params);
+    pockets1 = apply_clustering(pockets, params, lvert);
+
+    my_free(pockets);
     if (DEBUG) {
         fprintf(DEBUG_STREAM, "applied clustering to pockets");
         print_number_of_objects_in_memory();
     }
 
-    if (pockets) {
-        reIndexPockets(pockets);
+    if (pockets1) {
+        reIndexPockets(pockets1);
 
         //        fprintf(stdout, "> Calculating descriptors and score...\n");
 
         if (DEBUG)print_number_of_objects_in_memory();
-        set_pockets_descriptors(pockets, pdb, params, pdb_w_lig);
+        set_pockets_descriptors(pockets1, pdb, params, pdb_w_lig);
+        //fprintf(stdout, "it's %d pockets\n", pockets1->n_pockets);
+
         if (DEBUG) print_number_of_objects_in_memory();
 
 
@@ -178,30 +184,32 @@ c_lst_pockets* search_pocket(s_pdb *pdb, s_fparams *params, s_pdb *pdb_w_lig) {
             fprintf(DEBUG_STREAM, "drop small and polar clusters\n");
         }
 
-        dropSmallNpolarPockets(pockets, params);
+        dropSmallNpolarPockets(pockets1, params);
+        //fprintf(stdout, "it's %d pockets\n", pockets1->n_pockets);
+
         if (DEBUG) print_number_of_objects_in_memory();
 
-        reIndexPockets(pockets);
+        reIndexPockets(pockets1);
         if (DEBUG) print_number_of_objects_in_memory();
 
         /* Sorting pockets */
         if (DEBUG) print_number_of_objects_in_memory();
-        sort_pockets(pockets, M_SCORE_SORT_FUNCT);
+        sort_pockets(pockets1, M_SCORE_SORT_FUNCT);
         if (DEBUG) print_number_of_objects_in_memory();
 
         //sort_pockets(pockets, M_NASPH_SORT_FUNCT) ;
 
 
         if (DEBUG) print_number_of_objects_in_memory();
-        reIndexPockets(pockets);
+        reIndexPockets(pockets1);
         if (DEBUG) print_number_of_objects_in_memory();
         //        int i;
 
-        if (params->fpocket_running && params->flag_do_grid_calculations && params->topology_path) calculate_pocket_energy_grids(pockets, params, pdb);
+        if (params->fpocket_running && params->flag_do_grid_calculations && params->topology_path) calculate_pocket_energy_grids(pockets1, params, pdb);
         //params->fpocket_running && 
 
     }
 
-    return pockets;
+    return pockets1;
 }
 
