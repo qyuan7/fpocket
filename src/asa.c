@@ -82,7 +82,7 @@ int atom_in_list(s_atm *a, s_atm **atoms, int natoms){
         int * : atom ids of surrounding atoms
  */
 
-int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_sa){
+int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_sa, int *ua, int n_ua){
     s_atm *a=NULL;
     int *sa=NULL;
     int i,z,flag=0;
@@ -129,7 +129,7 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
         xtmp = a->x;
         ytmp = a->y;
         ztmp = a->z;
-        /*if(atom_in_list(a, ua, n_ua)){
+        if(atom_in_list(a, ua, n_ua)){
             if(strncmp(a->symbol, "H",1)){
               *n_sa=*n_sa+1;
               if(sa==NULL){
@@ -142,7 +142,7 @@ int *get_surrounding_atoms_idx(s_vvertice **tvert,int nvert,s_pdb *pdb, int *n_s
                   }
               continue;
           }
-        }*/
+        }
         if(xtmp>=xmin && xtmp<=xmax && ytmp>=ymin && ytmp<=ymax && ztmp>=zmin && ztmp<=zmax){
 
           if(strncmp(a->symbol,"H",1)){
@@ -346,7 +346,7 @@ void set_ASA(s_desc *desc,s_pdb *pdb, s_vvertice **tvert,int nvert)
     /*ua=get_unique_atoms_DEPRECATED(tvert,nvert, &n_ua,pdb->latoms_p,pdb->natoms);*/
 
     ua=get_unique_atoms_DEPRECATED(tvert,nvert, &n_ua);
-    sa=get_surrounding_atoms_idx(tvert, nvert, pdb, &n_sa);
+    sa=get_surrounding_atoms_idx(tvert, nvert, pdb, &n_sa, ua, n_ua);
     //int **reverse_neis = nei_vert_of_ua(tvert, nvert, ua, n_ua);;
     //reverse_neis = nei_vert_of_ua(tvert, nvert, ua, n_ua);
     //fprintf(stdout, "%d", reverse_neis[0][0]);
