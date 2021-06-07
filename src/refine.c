@@ -126,7 +126,7 @@ c_lst_pockets *apply_clustering(c_lst_pockets *pockets, s_fparams *params, s_lst
 	}
     int mergeId;
 
-
+    int i=0;
 	if(pockets){
 		pcur = pockets->first;
 		while(pcur){
@@ -141,15 +141,23 @@ c_lst_pockets *apply_clustering(c_lst_pockets *pockets, s_fparams *params, s_lst
 			s_pocket *pock = alloc_pocket();
 			pock->v_lst=c_lst_vertices_alloc();
 			//pock->v_lst = pcur->pocket->v_lst;
-			c_lst_vertices_add_last(pock->v_lst, pcur->pocket->v_lst->first->vertice);
+			//c_lst_vertices_add_last(pock->v_lst, pcur->pocket->v_lst->first->vertice);
+			c_lst_vertices_add_last(pock->v_lst, lvert->vertices+i);
 			pock->size = pock->v_lst->n_vertices;
 			c_lst_pockets_add_last(mergedPockets[mergeId], pock,cur_n_apol,cur_n_pol);
 			if(mergedPockets[mergeId]->n_pockets>1){
 				mergePockets(mergedPockets[mergeId]->first, mergedPockets[mergeId]->first->next,mergedPockets[mergeId]);
 
 			}
+            i += 1;
+			pcur = pcur->next;
+		}
+	}
 
-
+	if(pockets){
+		pcur = pockets->first;
+		while(pcur){
+			my_free(pcur->pocket);
 			pcur = pcur->next;
 		}
 	}
@@ -166,56 +174,12 @@ c_lst_pockets *apply_clustering(c_lst_pockets *pockets, s_fparams *params, s_lst
 	pockets1->vertices=lvert;
 	//pockets1->vertices->nvert;
 	//fprintf(stdout, "% verts in total\n", pockets1->vertices->nvert);
+	//print_number_of_objects_in_memory();
+	//for (int i=0; i<n_resid; i++){
+	//	c_lst_pocket_free(mergedPockets[i]);
+	//}
 	//my_free(mergedPockets);
-	/*sort_pockets(pockets, cmp_pockets);
-	if(pockets){
-		pcur = pockets->first;
-	
-		while(pcur){
-			vcur = pcur->pocket->v_lst->first->vertice;
-			cur_resid = vcur->resid;
-			curMobilePocket=pcur->next;
-			if(curMobilePocket){
-			    if(curMobilePocket->pocket->v_lst->first->vertice->resid == cur_resid){
-				    mergePockets(pcur, curMobilePocket, pockets);
-			    }
-			    else{
-				    pcur = curMobilePocket;
-				    //cur_resid = curMobilePocket->pocket->v_lst->first->vertice->resid;
-			    }
-			}
-			else{
-				break;
-			}
-
-		}
-	}*/
-	
-	/*if(pockets) {
-            pcur = pockets->first ;
-            while(pcur) {
-                vcur=pcur->pocket->v_lst->first->vertice;
-                curMobilePocket = pcur->next ;
-                cur_resid=vcur->resid;
-                while(curMobilePocket) {
-                    vmobile=curMobilePocket->pocket->v_lst->first->vertice;
-                    cur_mobile_resid=vmobile->resid;
-                    nextPocket = curMobilePocket->next;
-                    
-                    if(cur_resid==cur_mobile_resid) {
-                    // Merge pockets if barycentres are close to each other
-                            mergePockets(pcur, curMobilePocket, pockets);
-                    }
-                    curMobilePocket = nextPocket ;
-                }
-
-                pcur = pcur->next ;
-            }
-	}*/
-	
-	/*else {
-		fprintf(stderr, "! No pocket to refine! (argument NULL: %p).\n", pockets) ;
-	}*/
+    //print_number_of_objects_in_memory();
 	node_pocket *p = pockets1->first ;
 	while(p) {
 		p->pocket->size = p->pocket->v_lst->n_vertices ;
@@ -258,8 +222,30 @@ void apply_clustering_old(c_lst_pockets *pockets, s_fparams *params)
 	}
 	int n_resid = 0;
 	int max_resid = -1;
+	sort_pockets(pockets, cmp_pockets);
+	if(pockets){
+		pcur = pockets->first;
 	
-	if(pockets) {
+		while(pcur){
+			vcur = pcur->pocket->v_lst->first->vertice;
+			cur_resid = vcur->resid;
+			curMobilePocket=pcur->next;
+			if(curMobilePocket){
+			    if(curMobilePocket->pocket->v_lst->first->vertice->resid == cur_resid){
+				    mergePockets(pcur, curMobilePocket, pockets);
+			    }
+			    else{
+				    pcur = curMobilePocket;
+				    //cur_resid = curMobilePocket->pocket->v_lst->first->vertice->resid;
+			    }
+			}
+			else{
+				break;
+			}
+
+		}
+	}
+	/*if(pockets) {
             pcur = pockets->first ;
             while(pcur) {
                 vcur=pcur->pocket->v_lst->first->vertice;
@@ -279,7 +265,7 @@ void apply_clustering_old(c_lst_pockets *pockets, s_fparams *params)
 
                 pcur = pcur->next ;
             }
-	}
+	}*/
 	
 	else {
 		fprintf(stderr, "! No pocket to refine! (argument NULL: %p).\n", pockets) ;
@@ -287,6 +273,116 @@ void apply_clustering_old(c_lst_pockets *pockets, s_fparams *params)
 
 }
 
+
+c_lst_pockets *assign_apply_clustering( s_fparams *params, s_lst_vvertice *lvert)
+{
+	int i = -1,
+			
+    cur_n_pol=0,
+    cur_n_apol=0;
+
+	s_vvertice *vertices = lvert->vertices,
+			   *vcur = NULL ;
+	c_lst_pockets *pockets = c_lst_pockets_alloc();
+	int npockets = lvert->nvert;
+	int n_resid = 0;
+	int max_resid = -1;
+	int cur_resid = -1;
+	for(i=0; i<lvert->nvert;i++){
+		vcur = vertices + i;
+		cur_resid = vcur->resid;
+		if(cur_resid > max_resid){
+			max_resid = cur_resid;
+		}
+	}
+	int mem_table[max_resid+1];
+	for(int i=0; i<=max_resid; i++){
+		mem_table[i]=-1;
+	}
+	for(i=0; i<lvert->nvert; i++){
+		vcur = vertices + i;
+		cur_resid = vcur->resid;
+		//fprintf(stdout, "%d \n", cur_resid);
+
+		if(mem_table[cur_resid] == -1){
+			mem_table[cur_resid] = n_resid;
+			n_resid += 1;
+		}
+	}
+	
+	c_lst_pockets **mergedPockets = (c_lst_pockets *)
+                                               my_malloc(n_resid*sizeof(c_lst_pockets));
+
+	//c_lst_pockets *mergedPockets[n_resid];
+	for(int i=0; i<n_resid; i++){
+		mergedPockets[i] = c_lst_pockets_alloc();
+	}
+    int mergeId;
+    //fprintf(stdout, "max id is %d\n", max_resid);
+
+	//fprintf(stdout, "%d allocated.\n", n_resid);
+
+	for(i=0;i<npockets;i++) {
+
+       	vcur = vertices + i ;
+		cur_resid = vcur->resid;
+		mergeId = mem_table[cur_resid];
+		//fprintf(stdout, "group %d\n", mergeId);
+        cur_n_apol=0;
+        cur_n_pol=0;
+        //vcur->resid=i+1;
+        //vcur->id=i+1;
+        /* Create a new pocket */
+
+        s_pocket *pocket = alloc_pocket();
+        pocket->v_lst=c_lst_vertices_alloc();
+        /* Add vertices to the pocket */
+
+        c_lst_vertices_add_last(pocket->v_lst, vcur);
+
+        if(vcur->type==M_APOLAR_AS) cur_n_apol++;
+        else cur_n_pol++;
+        //pocket->rank=i+1;
+
+        pocket->size = pocket->v_lst->n_vertices;
+        //fprintf(stdout, "%d\n", mergedPockets[mergeId]->n_pockets);
+        //fprintf(stdout, "before.\n");
+        //fprintf(stdout, "%d pockets\n", mergedPockets[mergeId]->n_pockets);
+        c_lst_pockets_add_last(mergedPockets[mergeId], pocket,cur_n_apol,cur_n_pol);
+		//fprintf(stdout, "added.\n");
+		if(mergedPockets[mergeId]->n_pockets>1){
+			mergePockets(mergedPockets[mergeId]->first, mergedPockets[mergeId]->first->next,mergedPockets[mergeId]);
+		}
+
+	}
+
+	for(int i=0; i<n_resid; i++){
+	
+   		int cur_n_apol = mergedPockets[i]->first->pocket->nAlphaApol;
+	   	int cur_n_pol = mergedPockets[i]->first->pocket->nAlphaPol;
+
+	    c_lst_pockets_add_last(pockets, mergedPockets[i]->first->pocket, cur_n_apol, cur_n_pol);
+	}
+	pockets->vertices=lvert;
+	node_pocket *p = pockets->first ;
+	while(p) {
+		p->pocket->size = p->pocket->v_lst->n_vertices ;
+		p = p->next ;
+	}
+    for(int i=0; i<n_resid; i++){
+        my_free(mergedPockets[i]);
+	}
+	my_free(mergedPockets);
+	if(pockets->n_pockets > 0){
+		return pockets;
+	}
+	else {
+		fprintf(stderr, "! No pocket to refine! (argument NULL: %p).\n", pockets) ;
+		my_free(pockets) ;
+		return NULL ;
+	}
+
+}
 
 /**
    ## FUNCTION: 
