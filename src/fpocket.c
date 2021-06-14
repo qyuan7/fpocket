@@ -147,7 +147,8 @@ c_lst_pockets* search_pocket(s_pdb *pdb, s_fparams *params, s_pdb *pdb_w_lig) {
         return NULL;
     }
 
-    pockets = assign_pockets(lvert);
+    //pockets = assign_pockets(lvert);
+    pockets1 = assign_apply_clustering(params, lvert);
     if (DEBUG) {
         fprintf(DEBUG_STREAM, "After pocket assignment :\n");
         fflush(DEBUG_STREAM);
@@ -157,9 +158,9 @@ c_lst_pockets* search_pocket(s_pdb *pdb, s_fparams *params, s_pdb *pdb_w_lig) {
     }
     
     //apply_clustering_old(pockets, params);
-    pockets1 = apply_clustering(pockets, params, lvert);
+    //pockets1 = apply_clustering(pockets, params, lvert);
 
-    my_free(pockets);
+    //my_free(pockets);
     if (DEBUG) {
         fprintf(DEBUG_STREAM, "applied clustering to pockets");
         print_number_of_objects_in_memory();
