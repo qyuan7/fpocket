@@ -4,7 +4,7 @@ import Pycluster
 from Pycluster import *
 from scipy.spatial import distance_matrix
 from collections import Counter
-import sys
+import argparse
 
 def pdb_to_data(fname):
     data = []
@@ -16,14 +16,15 @@ def pdb_to_data(fname):
     return data
 
 
-def assign_id(fname, cids, fout):
+def assign_id(fname, cids, default_id, fout, default_fout):
     data = pdb_to_data(fname)
     assert(len(data) == len(cids))
-    with open(fout, "w") as f:
+    with open(fout, "w") as f, open(default_fout, "w") as f2:
         for i in range(len(data)):
             f.write(f"ATOM  {i+1:5d}  C   PTH  {cids[i]:3d}     {data[i][0]:8.3f}{data[i][1]:8.3f}{data[i][2]:8.3f}{'0.00':>6}{'0.00':>6}\n")
+            if cids[i] == default_id:
+                f2.write(f"ATOM  {i+1:5d}  C   PTH  {cids[i]:3d}     {data[i][0]:8.3f}{data[i][1]:8.3f}{data[i][2]:8.3f}{'0.00':>6}{'0.00':>6}\n")
     return
-
 
 
 def assign_cluster_to_children(cid, node_id, tree, cluster_assign):
@@ -70,14 +71,24 @@ def reindex_clusters(cids):
 
 
 if __name__ == "__main__":
-    data = pdb_to_data("mdpout_freq_iso_0_5.pdb")
-    print(len(data), len(data[0]))
+    parser = argparse.ArgumentParser(description="Clustering of pockets with certain isovalues.")
+    parser.add_argument("--input", action="store", dest="infn", help="Input file containing gridpoints with isovalue cutoff")
+    parser.add_argument("--output", action="store", dest="outfn", help="Output file with clustered gridpoints" )
+    parser.add_argument("--bigpock", action="store", dest="bigpock", help="File for biggest single pocket detected by clustering")
+    arg_dict = vars(parser.parse_args())
+    infn_, outfn_, bigfn_ = arg_dict.values()
+    data = pdb_to_data(infn_)
+
+    #print(len(data), len(data[0]))
     dist_mtx = distance_matrix(data, data)
     tree = treecluster( data=None, distancematrix=dist_mtx, method='s',dist='e')
-    clusters = cuttree_distance(len(data), tree, distance=2.4)
+    clusters = cuttree_distance(len(data), tree, distance=1.74)
     cids = [f[1] for f in clusters]
     newids = reindex_clusters(cids)
 
     size = Counter(newids)
-    print(size.most_common())
-    assign_id("mdpout_freq_iso_0_5.pdb", newids, "mdpout_freq_iso_0_5_cluster.pdb")
+    default_id = size.most_common()[0][0] # id for the biggest pocket - analyse by default
+    #print(size.most_common())
+    assign_id(infn_, newids, default_id, outfn_, bigfn_)
+
+    #assign_id("drug_freq_iso_0_5.pdb", newids, default_id, "drug_freq_iso_0_5_cluster.pdb", "drug_freq_iso_0_5_biggest.pdb")
