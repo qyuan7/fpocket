@@ -417,7 +417,7 @@ void dropSmallNpolarPockets(c_lst_pockets *pockets, s_fparams *params)
 
 
 			if(pcur->v_lst->n_vertices < (size_t) params->min_pock_nb_asph 
-				||  pasph <  (params->refine_min_apolar_asphere_prop || pcur->pdesc->as_density<params->min_as_density)){
+				||  pasph <  (params->refine_min_apolar_asphere_prop) || pcur->pdesc->as_density<(params->min_as_density)){
 			/* If the pocket is too small or has not enough apolar alpha
 			 * spheres, drop it */
 			    //fprintf(stdout, "size is %d\n", pcur->v_lst->n_vertices);
